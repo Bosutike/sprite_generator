@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ivy Walobwa">
+    <meta name="description" content="CSS Sprite Generator">
+    <meta name="keywords"
+        content="html, html5, css, javascript, sprite sheet, image map, icon map, generator, tool, online, converter">
+    <title>CSS Sprite Generator</title>
+    <style>
+        div {
+            margin: 0;
+            padding: 0;
+        }
+
+        .content-container {
+            display: flex;
+            width: 100%;
+        }
+
+        .content-container .section {
+            width: 100%;
+        }
+
+        .sprite-preview-container {
+            margin: 0.5em 0;
+        }
+
+        .sprite-preview {
+            display: none;
+            margin: 0.5em 0;
+            padding: 0.5em;
+            overflow: auto;
+        }
+
+        .sprite-sheet-container {
+            margin: 0.5em 0;
+        }
+
+        .sprite-sheet {
+            display: none;
+            margin: 0.5em 0;
+            padding: 0.5em;
+            overflow: auto;
+            max-width: 100%;
+        }
+
+        .css-code-container {
+            margin: 0.5em 0;
+        }
+
+        .css-code {
+            display: none;
+            margin: 0.5em 0;
+            padding: 0.5em;
+            overflow: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>CSS Sprite Generator Tool</h1>
+    <div class="content-container">
+        <div class="section">
+            <p> Please upload your files</p>
+            <h3>1. Uploaded files</h3>
+            <input type="file" id="fileUploaderInput" name="file" multiple
+                accept="image/png, image/jpeg, image/webp, image/gif, image/x-icon, image/bmp, image/tiff">
+            <div class="sprite-preview-container">
+                <button onclick="toggleOriginalImgsView()">Show/Hide</button>
+                <div id="sprite-preview" class="sprite-preview"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>2. Sprite Preview</h3>
+            <div>
+                <label>Number of columns (Default 0):</label>
+                <input id="numberColsInput" type="number" value="0" required>
+                <small style="margin: 0;">If set to 0 will adapt automatically.</small>
+                <br>
+                <br>
+                <label>Padding between img in px (Default 0):</label>
+                <input id="paddingInput" type="number" value="0" required>
+            </div>
+            <br>
+            <button id="generateSpriteSheetButton">Generate Sprite Sheet</button>
+            <div class="sprite-sheet-container">
+                <button onclick="toggleSpriteView()">Show/Hide</button>
+                <div id="sprite-sheet" class="sprite-sheet"></div>
+            </div>
+        </div>
+        <div class="section">
+            <h3>3. Sprite Download</h3>
+            <label>Sprite class name (will be used in CSS): </label>
+            <input id="spriteClassInput" type="text" value="sprite" required>
+            <button id="generateCSSButton">Generate CSS</button>
+            <br>
+            <br>
+            <button id="spriteSheetDownloadButton">Download Sprite</button>
+            <button id="spriteSheetDownloadCSS">Download CSS</button>
+            <h4>CSS Styling</h4>
+            <div class="css-code-container">
+                <button onclick="toggleCSSView()">Show/Hide</button>
+                <div id="css-code" class="css-code"></div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script>
+    let spritePreview;
+    let spriteSheetContainer;
+    let cssCode;
+    let fileUploaderInput;
+    let generateSpriteSheetButton;
+    let spriteSheetDownloadButton;
+    let spriteSheetDownloadCSS;
+    let generateCSSButton;
+    let loadedImages = [];
+    let loadedImagesFileNames = [];
+    let generatedSpriteSheet;
+    let cssStyles;
+    let padding = 2;
+
+    window.onload = () => {
+        spritePreview = document.getElementById("sprite-preview");
+        spriteSheetContainer = document.getElementById("sprite-sheet");
+        cssCode = document.getElementById("css-code");
+
+        fileUploaderInput = document.getElementById("fileUploaderInput");
+        if (fileUploaderInput) {
+            fileUploaderInput.addEventListener("change", fileUploaderOnchange);
+        }
+
+        generateSpriteSheetButton = document.getElementById("generateSpriteSheetButton");
+        generateSpriteSheetButton.addEventListener("click", (event) =>
+            createSpriteSheet(loadedImages)
+        );
+
+        spriteSheetDownloadButton = document.getElementById("spriteSheetDownloadButton");
+        spriteSheetDownloadButton.addEventListener("click", (event) =>
+            downloadSprite()
+        );
+
+        spriteSheetDownloadCSS = document.getElementById("spriteSheetDownloadCSS");
+        spriteSheetDownloadCSS.addEventListener("click", (event) =>
+            downloadCSS()
+        );
+
+        generateCSSButton = document.getElementById("generateCSSButton");
+        generateCSSButton.addEventListener("click", () => {
+            createSpriteSheet(loadedImages)
+        });
+    };
+
+    const fileUploaderOnchange = (event) => {
+        const loadedFiles = Array.from(fileUploaderInput.files);
+
+        spritePreview.innerHTML = "";
+
+        loadedFiles.forEach((file) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                // Create new image element and give it the source of our file and alt
+                const image = new Image();
+                image.src = event.target.result;
+                // When the image is loaded, create a canvas element and draw the image on it
+                image.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d");
+                    // Set the canvas width and height
+                    canvas.width = image.width * (100 / image.width);
+                    canvas.height = image.height * (100 / image.height);
+                    // Draw the image on the canvas
+                    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                    // Create a new image element and give it the source of our canvas
+                    const newImage = new Image();
+                    newImage.src = canvas.toDataURL();
+                    newImage.alt = file.name.replace(
+                        /\.(png|jfif|pjpeg|jpeg|pjp|jpg|webp|gif|ico|bmp|dib|tiff|tif)$/,
+                        ""
+                    );
+                    spritePreview.appendChild(newImage);
+                    loadedImages.push(image);
+                    loadedImagesFileNames.push(file.name.replace(/\.[^.]+$/, ""));
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+        spritePreview.style.display = "block";
+    };
+
+    const createSpriteSheet = (images) => {
+        const padding = parseInt(document.getElementById("paddingInput").value) || 0;
+        // Determine Sprite Sheet Dimensions
+        const totalImages = images.length;
+        // Calculate the minimum required dimensions for the sprite sheet
+        const numberColsInput = document.getElementById("numberColsInput").value;
+        const cols =
+            numberColsInput === "0"
+                ? Math.ceil(Math.sqrt(totalImages))
+                : numberColsInput;
+        const spriteHeight = Math.ceil(totalImages / cols) * images[0].height + (Math.ceil(totalImages / cols) * 2 * padding);
+        const spriteWidth = cols * images[0].width + (cols * 2 * padding);
+        // Create Canvas
+        const canvas = document.createElement("canvas");
+        canvas.width = spriteWidth;
+        canvas.height = spriteHeight;
+        const ctx = canvas.getContext("2d");
+        // Arrange Images on Canvas
+        let x = padding;
+        let y = padding;
+        for (const image of images) {
+            ctx.drawImage(image, x, y);
+            x += image.width + padding * 2;
+            if (x >= spriteWidth) {
+                x = padding;
+                y += image.height + padding * 2;
+            }
+        }
+        // Generate CSS Styles
+        const mainClassName = document.getElementById("spriteClassInput").value;
+        cssStyles = "";
+        x = padding;
+        y = padding;
+        cssStyles += `
+            .${mainClassName} {
+                background-image: url('sprite-sheet.png');
+                background-repeat: no-repeat;
+                display: inline-block;
+            }
+        `;
+        for (let i = 0; i < totalImages; i++) {
+            const image = images[i];
+            cssStyles += `
+                .${mainClassName}.${loadedImagesFileNames[i]} {
+                background-position: ${x * -1}px ${y * -1}px;
+                width: ${image.width}px;
+                height: ${image.height}px;
+                }
+            `;
+            x += image.width + padding * 2;
+            if (x >= spriteWidth) {
+                x = padding;
+                y += image.height + padding * 2;
+            }
+        }
+        const img = document.getElementById("spriteResultImg");
+        if (img) img.remove();
+        const newImage = new Image();
+        newImage.id = "spriteResultImg";
+        newImage.src = canvas.toDataURL();
+        newImage.alt = "sprite-sheet";
+        spriteSheetContainer.appendChild(newImage);
+        spriteSheetContainer.style.display = "block";
+        generatedSpriteSheet = newImage;
+        cssCode.innerHTML = cssStyles;
+        cssCode.style.display = "block";
+    };
+
+    const downloadSprite = () => {
+        const link = document.createElement("a");
+        link.href = generatedSpriteSheet.src;
+        link.download = "sprite-sheet.png";
+        link.click();
+    };
+
+    const downloadCSS = () => {
+        let text = cssStyles;
+        let blob = new Blob([text], { type: "text/plain" });
+        let url = URL.createObjectURL(blob);
+        let link = document.createElement("a");
+
+        link.href = url;
+        link.download = "css.css";
+        link.click();
+
+        URL.revokeObjectURL(url);
+    };
+
+    function toggleOriginalImgsView() {
+        var x = document.getElementById("sprite-preview");
+        if (x.style.display === "none") {
+            x.style.display = "block";
+        } else {
+            x.style.display = "none";
+        }
+    }
+
+    function toggleSpriteView() {
+        var x = document.getElementById("sprite-sheet");
+        if (x.style.display === "none") {
+            x.style.display = "block";
+        } else {
+            x.style.display = "none";
+        }
+    }
+
+    function toggleCSSView() {
+        var x = document.getElementById("css-code");
+        if (x.style.display === "none") {
+            x.style.display = "block";
+        } else {
+            x.style.display = "none";
+        }
+    }
+
+</script>
+
+</html>
