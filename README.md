@@ -14,3 +14,6 @@ Included features:
 -   Number columns.
 
 Feel free to use in any context!
+
+Sources of inspiration:
+[Create a CSS sprite generator tool](https://blog.logrocket.com/create-css-sprite-generator-tool/)
